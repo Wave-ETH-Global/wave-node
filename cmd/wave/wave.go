@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/Wave-ETH-Global/wave-node/config"
+	"github.com/Wave-ETH-Global/wave-node/database"
 	"github.com/Wave-ETH-Global/wave-node/router"
 	"github.com/google/logger"
 	"github.com/jmoiron/sqlx"
@@ -32,7 +33,7 @@ func main() {
 			provideConfig,
 			provideRouter,
 			provideLogging,
-			provideDatabase,
+			database.ProvideDatabase,
 		),
 		fx.Invoke(
 			runRouter,
@@ -107,17 +108,4 @@ func provideRouter(cfg *config.Config) *echo.Echo {
 		logger.Fatal(err)
 	}
 	return r
-}
-
-func provideDatabase(cfg *config.Config) *sqlx.DB {
-	if cfg.DB.Type != "postgres" {
-		logger.Fatal("The only supported database is PostgreSQL!")
-	}
-
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", cfg.DB.User, cfg.DB.Password, cfg.DB.Address, cfg.DB.Port, cfg.DB.DatabaseName))
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	return db
 }
