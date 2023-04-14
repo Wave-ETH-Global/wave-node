@@ -10,7 +10,9 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/config"
 	"github.com/Wave-ETH-Global/wave-node/router"
 	"github.com/google/logger"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
+	_ "github.com/lib/pq"
 	"github.com/mcuadros/go-defaults"
 	"github.com/pelletier/go-toml/v2"
 	"go.uber.org/fx"
@@ -30,6 +32,7 @@ func main() {
 			provideConfig,
 			provideRouter,
 			provideLogging,
+			provideDatabase,
 		),
 		fx.Invoke(
 			runRouter,
@@ -39,7 +42,7 @@ func main() {
 
 }
 
-func runRouter(lc fx.Lifecycle, r *echo.Echo, l *logger.Logger, cfg *config.Config) {
+func runRouter(lc fx.Lifecycle, r *echo.Echo, l *logger.Logger, cfg *config.Config, db *sqlx.DB) {
 	lc.Append(
 		fx.Hook{
 			OnStart: func(ctx context.Context) error {
@@ -104,4 +107,17 @@ func provideRouter(cfg *config.Config) *echo.Echo {
 		logger.Fatal(err)
 	}
 	return r
+}
+
+func provideDatabase(cfg *config.Config) *sqlx.DB {
+	if cfg.DB.Type != "postgres" {
+		logger.Fatal("The only supported database is PostgreSQL!")
+	}
+
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", cfg.DB.User, cfg.DB.Password, cfg.DB.Address, cfg.DB.Port, cfg.DB.DatabaseName))
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	return db
 }
