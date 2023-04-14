@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/Wave-ETH-Global/wave-node/app"
 	"github.com/Wave-ETH-Global/wave-node/config"
 	"github.com/Wave-ETH-Global/wave-node/router"
 	"github.com/google/logger"
@@ -29,24 +28,27 @@ func main() {
 		fx.Provide(
 			provideAppFlags,
 			provideConfig,
-			provideApp,
 			provideRouter,
 			provideLogging,
 		),
 		fx.Invoke(
-			runApp,
+			runRouter,
 		),
 		fx.NopLogger,
 	).Run()
 
 }
 
-func runApp(lc fx.Lifecycle, a *app.App, r *echo.Echo, l *logger.Logger) {
+func runRouter(lc fx.Lifecycle, r *echo.Echo, l *logger.Logger, cfg *config.Config) {
 	lc.Append(
 		fx.Hook{
 			OnStart: func(ctx context.Context) error {
 				logger.Info("Starting Wave node...")
-				return a.Run(ctx, r)
+				port := cfg.HTTP.Port
+				addr := cfg.HTTP.Address
+				logger.Infof("HTTP server starts listening at %s:%d", addr, port)
+				go r.Start(fmt.Sprintf("%s:%d", addr, port))
+				return nil
 			},
 			OnStop: func(ctx context.Context) error {
 				l.Close()
@@ -96,16 +98,8 @@ func provideConfig(l *logger.Logger, flags *AppFlags) *config.Config {
 	return &cfg
 }
 
-func provideApp(cfg *config.Config) *app.App {
-	a, err := app.NewApp(cfg)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	return a
-}
-
-func provideRouter(a *app.App) *echo.Echo {
-	r, err := router.NewRouter(a)
+func provideRouter(cfg *config.Config) *echo.Echo {
+	r, err := router.NewRouter(cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
