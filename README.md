@@ -10,9 +10,16 @@ go build -o ./build/wave ./cmd/wave
 
 # Running
 
+1. Generate the config of node
 ```
 $ ./build/wave -genconfig > config.toml
-$ ./build/wave - config ./config.toml
+```
+
+2. Set values in the newly created config file called `config.toml`
+
+3. Run the node
+```
+$ ./build/wave -config ./config.toml
 ```
 
 # License
