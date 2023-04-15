@@ -14,7 +14,7 @@ type ConnectionStatus string
 const (
 	Requested ConnectionStatus = "requested"
 	Connected ConnectionStatus = "connected"
-	denied    ConnectionStatus = "denied"
+	Denied    ConnectionStatus = "denied"
 )
 
 type Connection struct {
