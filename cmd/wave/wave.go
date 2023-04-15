@@ -8,7 +8,9 @@ import (
 	"os"
 
 	"github.com/Wave-ETH-Global/wave-node/config"
+	"github.com/Wave-ETH-Global/wave-node/controllers"
 	"github.com/Wave-ETH-Global/wave-node/database"
+	"github.com/Wave-ETH-Global/wave-node/repositories"
 	"github.com/Wave-ETH-Global/wave-node/router"
 	"github.com/google/logger"
 	"github.com/jmoiron/sqlx"
@@ -35,6 +37,8 @@ func main() {
 			provideLogging,
 			database.ProvideDatabase,
 		),
+		repositories.FxModule,
+		controllers.FxModule,
 		fx.Invoke(
 			runRouter,
 		),
@@ -102,8 +106,8 @@ func provideConfig(l *logger.Logger, flags *AppFlags) *config.Config {
 	return &cfg
 }
 
-func provideRouter(cfg *config.Config) *echo.Echo {
-	r, err := router.NewRouter(cfg)
+func provideRouter(cfg *config.Config, pc *controllers.ProfileController) *echo.Echo {
+	r, err := router.NewRouter(cfg, pc)
 	if err != nil {
 		logger.Fatal(err)
 	}

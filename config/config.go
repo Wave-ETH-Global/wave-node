@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	HTTP HTTPConfig
-	DB   DB
+	HTTP          HTTPConfig
+	DB            DB
+	AirStackToken string
 }
 
 type HTTPConfig struct {
