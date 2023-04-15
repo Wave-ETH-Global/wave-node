@@ -14,25 +14,14 @@ services:
       - "127.0.0.1:5432:5432"
     restart: unless-stopped
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    # command: /bin/sh -c "go run app/main.go"
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-    ports:
-      - 8080:8080
-    environment:
-      POSTGRES_USER: developer
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: wave
-      FRONT_DOMAIN: http://localhost:3000
+  redis:
+    image: "redis:latest"
+    command: "redis-server"
+    expose:
+      - 6379
+    networks:
+      - "default"
+    restart: "no"
 
 volumes:
   postgres:

@@ -10,6 +10,7 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/config"
 	"github.com/Wave-ETH-Global/wave-node/controllers"
 	"github.com/Wave-ETH-Global/wave-node/database"
+	"github.com/Wave-ETH-Global/wave-node/middlewares"
 	"github.com/Wave-ETH-Global/wave-node/repositories"
 	"github.com/Wave-ETH-Global/wave-node/router"
 	"github.com/google/logger"
@@ -36,15 +37,14 @@ func main() {
 			provideRouter,
 			provideLogging,
 			database.ProvideDatabase,
+			middlewares.ProvideRedis,
 		),
 		repositories.FxModule,
 		controllers.FxModule,
 		fx.Invoke(
 			runRouter,
 		),
-		fx.NopLogger,
 	).Run()
-
 }
 
 func runRouter(lc fx.Lifecycle, r *echo.Echo, l *logger.Logger, cfg *config.Config, db *sqlx.DB) {
@@ -106,8 +106,12 @@ func provideConfig(l *logger.Logger, flags *AppFlags) *config.Config {
 	return &cfg
 }
 
-func provideRouter(cfg *config.Config, pc *controllers.ProfileController) *echo.Echo {
-	r, err := router.NewRouter(cfg, pc)
+func provideRouter(
+	cfg *config.Config,
+	pc *controllers.ProfileController,
+	ac *controllers.AccountController,
+) *echo.Echo {
+	r, err := router.NewRouter(cfg, pc, ac)
 	if err != nil {
 		logger.Fatal(err)
 	}

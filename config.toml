@@ -1,0 +1,18 @@
+AirStackToken = "245731f3ed0e4a5cbe28627458fbc5e2"
+
+[HTTP]
+Address = '0.0.0.0'
+Port = 34567
+
+[DB]
+Type = 'postgres'
+Address = '127.0.0.1'
+Port = 5432
+User = 'developer'
+Password = 'password'
+DatabaseName = 'wave'
+
+[Redis]
+REDIS_DATABASE=1
+REDIS_HOST="redis"
+REDIS_PORT=6379

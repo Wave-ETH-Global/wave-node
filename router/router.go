@@ -9,7 +9,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func NewRouter(cfg *config.Config, pc *controllers.ProfileController) (*echo.Echo, error) {
+func NewRouter(cfg *config.Config,
+	pc *controllers.ProfileController,
+	ac *controllers.AccountController,
+) (*echo.Echo, error) {
 	router := echo.New()
 	router.HideBanner = true
 
@@ -24,6 +27,7 @@ func NewRouter(cfg *config.Config, pc *controllers.ProfileController) (*echo.Ech
 		return nil
 	})
 
+	router.POST("/token", ac.LoginByOrRegisterWalletAddress)
 	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo)
 
 	return router, nil

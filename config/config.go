@@ -11,6 +11,7 @@ import (
 type Config struct {
 	HTTP          HTTPConfig
 	DB            DB
+	Redis         Redis
 	AirStackToken string
 }
 
@@ -26,6 +27,13 @@ type DB struct {
 	User         string
 	Password     string
 	DatabaseName string
+}
+
+type Redis struct {
+	Database       uint8  `default:"1"`
+	Host           string `default:"redis"`
+	Port           uint16 `default:"6379"`
+	TimeoutSeconds uint8  `default:"86400"`
 }
 
 func NewConfig(path string) (Config, error) {
