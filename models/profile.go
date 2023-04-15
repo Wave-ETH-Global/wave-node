@@ -10,11 +10,12 @@ type Profile struct {
 }
 
 type Connection struct {
-	ID       int64    `db:"id"`
-	VertexA  string   `db:"vertex_a"`
-	VertexB  string   `db:"vertex_a"`
-	TagsA    []string `db:"tags_a"`
-	TagsB    []string `db:"tags_b"`
-	ProfileA *Profile `db:"-"`
-	ProfileB *Profile `db:"-"`
+	ID          int64    `db:"id"`
+	VertexA     string   `db:"vertex_a"`
+	VertexB     string   `db:"vertex_a"`
+	Tags        []string `db:"tags"`
+	PrivateTags []string `db:"private_tags"`
+	ConnectedAt uint64   `db:"connected_at"`
+	ProfileA    *Profile `db:"-"`
+	ProfileB    *Profile `db:"-"`
 }
