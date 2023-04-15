@@ -9,10 +9,30 @@ services:
       POSTGRES_DB: wave
       PGDATA: /data/postgres
     volumes:
-       - postgres:/data/postgres
+      - postgres:/data/postgres
     ports:
       - "127.0.0.1:5432:5432"
     restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # command: /bin/sh -c "go run app/main.go"
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
+    ports:
+      - 8080:8080
+    environment:
+      POSTGRES_USER: developer
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: wave
+      FRONT_DOMAIN: http://localhost:3000
 
 volumes:
   postgres:

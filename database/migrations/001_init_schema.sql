@@ -1,11 +1,11 @@
 -- +goose Up
 
 create table profile (
-   uuid text primary key,
-   eth_address text unique,
-   metadata json,
-   public_tags text[],
-   tokens json
+    uuid text primary key,
+    eth_address text unique,
+    metadata json,
+    public_tags text[],
+    tokens json
 );
 
 create table connection (
