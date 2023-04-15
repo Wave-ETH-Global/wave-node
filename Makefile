@@ -9,4 +9,4 @@ build:
 
 .PHONY: run
 run:
-	./build/wave -config ./config.toml
+	./build/wave -config ./.config.toml

@@ -92,7 +92,7 @@ func (pr *ProfileRepository) GetOnchainInfo(ethAddress string, cursor string) (m
 
 func (pr *ProfileRepository) GetProfileByAddress(ethAddress string) (*models.Profile, error) {
 	p := models.Profile{}
-	err := pr.db.Select(&p, "select * from profile where eth_address = $1", ethAddress)
+	err := pr.db.Get(&p, "select * from profile where eth_address = $1", ethAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (pr *ProfileRepository) GetProfileByAddress(ethAddress string) (*models.Pro
 
 func (pr *ProfileRepository) GetProfileByUUID(uuid string) (*models.Profile, error) {
 	p := models.Profile{}
-	err := pr.db.Select(&p, "select * from profile where uuid = $1", uuid)
+	err := pr.db.Get(&p, "select * from profile where uuid = $1", uuid)
 	if err != nil {
 		return nil, err
 	}

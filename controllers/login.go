@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -30,8 +31,8 @@ type LoginController struct {
 	ec   *ethclient.EthClient
 }
 
-func NewLoginController(rc *redis.Client, ec *ethclient.EthClient) *LoginController {
-	return &LoginController{rc: rc, ec: ec}
+func NewLoginController(rc *redis.Client, ec *ethclient.EthClient, pr *repositories.ProfileRepository) *LoginController {
+	return &LoginController{rc: rc, ec: ec, repo: pr}
 }
 
 type LoginByWalletAddressReq struct {
@@ -48,7 +49,6 @@ func (c LoginController) LoginByWallet(
 	ectx echo.Context,
 ) error {
 	req := &LoginByWalletAddressReq{}
-	ctx := ectx.Request().Context()
 	if err := ectx.Bind(req); err != nil {
 		return err
 	}
@@ -70,33 +70,22 @@ func (c LoginController) LoginByWallet(
 
 	ac, err := c.repo.GetProfileByAddress(req.WalletAddress)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return ectx.JSON(http.StatusBadRequest, HTTPError{Error: "no such profile"})
+		}
 		logger.Error(err)
 		return err
 	}
 
-	if ac == nil {
-		logger.Errorf("account with address %s isn't found", req.WalletAddress)
-	}
-
-	claims := jwt.MapClaims{
-		"address": req.WalletAddress,
-		"uuid":    ac.UUID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
-	}
-
-	// generate header and payload
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// add sig to token
-	tokenString, err := token.SignedString([]byte("SECRET_KEY"))
+	token, err := c.issueJWT(req.WalletAddress, ac.UUID)
 	if err != nil {
+		logger.Error(err)
 		return err
 	}
-	ectx.Response().Header().Set("Authorization", tokenString)
-	hash := sha256.Sum256([]byte(tokenString))
-	c.rc.Set(ctx, hex.EncodeToString(hash[:]), true, time.Duration(time.Hour*24*7))
 
-	return ectx.JSON(http.StatusOK, &LoginByWalletAddressRes{Token: tokenString})
+	ectx.Response().Header().Set("Authorization", token)
+
+	return ectx.JSON(http.StatusOK, &LoginByWalletAddressRes{Token: token})
 }
 
 func SignatureSourceMessageFromTemplate(messageTemplate string, nonce string) string {
@@ -111,6 +100,18 @@ func (lc *LoginController) Signup(ctx echo.Context) error {
 		return err
 	}
 
+	if p.ETHAddress == "" {
+		return ctx.JSON(http.StatusBadRequest, HTTPError{Error: "you must specify ethereum address!"})
+	}
+
+	_, err = lc.repo.GetProfileByAddress(p.ETHAddress)
+	if err == nil {
+		return ctx.JSON(http.StatusBadRequest, HTTPError{Error: "profile with such ethereum address exists!"})
+	} else if err != sql.ErrNoRows && err != nil {
+		logger.Error(err)
+		return err
+	}
+
 	newUUID := uuid.New().String()
 	p.UUID = newUUID
 	pj, _ := json.Marshal(p)
@@ -118,14 +119,17 @@ func (lc *LoginController) Signup(ctx echo.Context) error {
 	r, _ := utils.SecureRandom(24)
 	err = lc.rc.Set(context.TODO(), r, string(pj), time.Hour*3).Err()
 	if err != nil {
+		logger.Error(err)
 		return err
 	}
 
 	var resp struct {
-		UUID string `json:"uuid"`
+		UUID         string `json:"uuid"`
+		OneTimeToken string `json:"one_time_token"`
 	}
 
 	resp.UUID = newUUID
+	resp.OneTimeToken = r
 
 	return ctx.JSON(http.StatusOK, resp)
 }
@@ -136,20 +140,27 @@ func (lc *LoginController) SignupCompleted(ctx echo.Context) error {
 	}
 
 	if err := ctx.Bind(&t); err != nil {
+		logger.Error(err)
 		return err
 	}
 	req := lc.rc.Get(context.TODO(), t.OneTimeToken)
 	if req.Err() != nil {
+		if req.Err() == redis.Nil {
+			return ctx.JSON(http.StatusBadRequest, HTTPError{Error: "one time token is invalid!"})
+		}
+		logger.Error(req.Err())
 		return req.Err()
 	}
 
 	var p models.Profile
-	if err := json.Unmarshal([]byte(req.String()), &p); err != nil {
+	if err := json.Unmarshal([]byte(req.Val()), &p); err != nil {
+		logger.Error(err)
 		return err
 	}
 
 	uuid, err := lc.ec.GetUUIDOfClaimedUserHandle(p.Username)
 	if err != nil {
+		logger.Error(err)
 		return err
 	}
 	if uuid != p.UUID {
@@ -157,8 +168,42 @@ func (lc *LoginController) SignupCompleted(ctx echo.Context) error {
 	}
 
 	if err := lc.repo.InsertProfile(&p); err != nil {
+		logger.Error(err)
 		return err
 	}
 
-	return nil
+	lc.rc.Del(context.TODO(), t.OneTimeToken)
+
+	token, err := lc.issueJWT(p.ETHAddress, p.UUID)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	var resp struct {
+		Token string `json:"token"`
+	}
+
+	resp.Token = token
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+func (lc *LoginController) issueJWT(address string, uuid string) (string, error) {
+	claims := jwt.MapClaims{
+		"address": address,
+		"uuid":    uuid,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+	}
+
+	// generate header and payload
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// add sig to token
+	tokenString, err := token.SignedString([]byte("SECRET_KEY"))
+	if err != nil {
+		return "", err
+	}
+	hash := sha256.Sum256([]byte(tokenString))
+	lc.rc.Set(context.TODO(), hex.EncodeToString(hash[:]), true, time.Duration(time.Hour*24*7))
+	return hex.EncodeToString(hash[:]), nil
 }

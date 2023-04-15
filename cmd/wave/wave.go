@@ -10,6 +10,7 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/config"
 	"github.com/Wave-ETH-Global/wave-node/controllers"
 	"github.com/Wave-ETH-Global/wave-node/database"
+	"github.com/Wave-ETH-Global/wave-node/ethclient"
 	"github.com/Wave-ETH-Global/wave-node/middlewares"
 	"github.com/Wave-ETH-Global/wave-node/redis"
 	"github.com/Wave-ETH-Global/wave-node/repositories"
@@ -39,6 +40,7 @@ func main() {
 			provideLogging,
 			database.ProvideDatabase,
 			redis.ProvideRedis,
+			provideEthClient,
 			middlewares.NewAuthMiddleware,
 		),
 		repositories.FxModule,
@@ -119,4 +121,14 @@ func provideRouter(
 		logger.Fatal(err)
 	}
 	return r
+}
+
+func provideEthClient(
+	cfg *config.Config,
+) *ethclient.EthClient {
+	c, err := ethclient.NewEthClient(cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	return c
 }
