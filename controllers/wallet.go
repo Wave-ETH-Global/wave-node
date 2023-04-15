@@ -43,8 +43,6 @@ func (c AccountController) LoginByOrRegisterWalletAddress(
 		return err
 	}
 
-	logger.Infof("req:%+v", req)
-
 	walletAddress, err := domain.NewAddress(req.WalletAddress)
 	if err != nil {
 		logger.Errorf("invalid wallet address:%s", req.WalletAddress)

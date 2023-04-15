@@ -3,5 +3,5 @@ alter table connection add status text;
 alter table connection add read boolean;
 
 -- +goose Down
-alter table connection drop status text;
-alter table connection drop read boolean;
+alter table connection drop status;
+alter table connection drop read;

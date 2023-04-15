@@ -1,14 +1,20 @@
 package repositories
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/Wave-ETH-Global/wave-node/config"
+	"github.com/Wave-ETH-Global/wave-node/database"
+	"github.com/Wave-ETH-Global/wave-node/models"
+	"github.com/google/logger"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 const (
@@ -85,4 +91,37 @@ func (pr *ProfileRepository) GetOnchainInfo(ethAddress string, cursor string) (m
 	}
 
 	return data, nil
+}
+
+type RequestConnectionParam struct {
+	ConnectorAddress string
+	RequestedAddress string
+	Tags             []string
+	PrivateTags      []string
+}
+
+func (pr *ProfileRepository) RequestConnection(ctx context.Context, param RequestConnectionParam) error {
+	db := database.ProvideDatabase(pr.cfg)
+	if db == nil {
+		return nil
+	}
+
+	var requesterUUID string
+	var requestedUUID string
+	sel := `select uuid from profile where eth_address=$1`
+	if err := db.QueryRow(sel, param.ConnectorAddress).Scan(&requesterUUID); err != nil {
+		return errors.New("failed to get")
+	}
+
+	if err := db.QueryRow(sel, param.ConnectorAddress).Scan(&requestedUUID); err != nil {
+		return errors.New("failed to get")
+	}
+
+	query := `INSERT INTO connection (vertex_a, vertex_b, status, tags, private_tags) VALUES ($1, $2, $3, $4, $5)`
+	if err := db.MustExec(query, &requesterUUID, &requestedUUID, models.Requested, pq.Array(param.Tags), pq.Array(param.PrivateTags)); err != nil {
+		logger.Error(err)
+		return errors.New("failed to insert")
+	}
+
+	return nil
 }

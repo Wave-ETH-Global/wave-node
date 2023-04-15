@@ -30,5 +30,7 @@ func NewRouter(cfg *config.Config,
 	router.POST("/token", ac.LoginByOrRegisterWalletAddress)
 	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo)
 
+	router.POST("/profile/:address/connections", pc.RequestConnection)
+
 	return router, nil
 }
