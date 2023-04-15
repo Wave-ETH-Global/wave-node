@@ -9,13 +9,22 @@ type Profile struct {
 	Tokens     []map[string]interface{} `db:"tokens"`
 }
 
+type ConnectionStatus string
+
+const (
+	Requested ConnectionStatus = "requested"
+	Connected ConnectionStatus = "connected"
+	denied    ConnectionStatus = "denied"
+)
+
 type Connection struct {
-	ID          int64    `db:"id"`
-	VertexA     string   `db:"vertex_a"`
-	VertexB     string   `db:"vertex_a"`
-	Tags        []string `db:"tags"`
-	PrivateTags []string `db:"private_tags"`
-	ConnectedAt uint64   `db:"connected_at"`
-	ProfileA    *Profile `db:"-"`
-	ProfileB    *Profile `db:"-"`
+	ID          int64            `db:"id"`
+	VertexA     string           `db:"vertex_a"`
+	VertexB     string           `db:"vertex_b"`
+	Status      ConnectionStatus `db:"status"`
+	Read        bool             `db:"read"`
+	Tags        []string         `db:"tags"`
+	PrivateTags []string         `db:"private_tags"`
+	ProfileA    *Profile         `db:"-"`
+	ProfileB    *Profile         `db:"-"`
 }
