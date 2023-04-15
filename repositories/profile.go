@@ -10,6 +10,7 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/config"
 	"github.com/Wave-ETH-Global/wave-node/models"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 const (
@@ -107,4 +108,14 @@ func (pr *ProfileRepository) GetProfileByUUID(uuid string) (*models.Profile, err
 	}
 
 	return &p, nil
+}
+
+func (pr *ProfileRepository) InsertProfile(p *models.Profile) error {
+	mj, _ := json.Marshal(p.Metadata)
+	tj, _ := json.Marshal(p.Tokens)
+	_, err := pr.db.Exec("insert into profile (uuid, eth_address, username, public_tags, metadata, tokens) values ($1, $2, $3, $4, $5, $6)", p.UUID, p.ETHAddress, p.Username, pq.Array(p.PublicTags), mj, tj)
+	if err != nil {
+		return err
+	}
+	return nil
 }

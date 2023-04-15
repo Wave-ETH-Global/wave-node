@@ -31,6 +31,8 @@ func NewRouter(cfg *config.Config,
 
 	router.POST("/token", lc.LoginByWallet)
 	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo)
+	router.POST("/signup", lc.Signup)
+	router.POST("/signup/completed", lc.SignupCompleted)
 
 	return router, nil
 }

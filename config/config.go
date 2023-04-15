@@ -13,11 +13,17 @@ type Config struct {
 	DB            DB
 	Redis         Redis
 	AirStackToken string
+	Ethereum      EthereumConfig
 }
 
 type HTTPConfig struct {
 	Address string `default:"0.0.0.0"`
 	Port    int    `default:"8080"`
+}
+
+type EthereumConfig struct {
+	GatewayAddress  string
+	ContractAddress string
 }
 
 type DB struct {

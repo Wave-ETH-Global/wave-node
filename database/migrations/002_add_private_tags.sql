@@ -1,6 +1,6 @@
 -- +goose Up
 
-alter table connection add private_tags integer;
+alter table connection add private_tags text[];
 alter table connection drop column tags_b;
 alter table connection add connected_at time;
 alter table connection rename column tags_a to tags;

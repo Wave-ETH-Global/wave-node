@@ -17,15 +17,15 @@ contract WaveUserHandle is ERC721URIStorage {
 
     string[] handles;
 
-    mapping (string => string) name;
-    mapping (string => bool) _exists;
+    mapping (string => string) userHandlers;
+    mapping (string => bool) _existingUserHandlers;
     mapping (uint256 => string) tokens;
 
     function claimUserHandle(string memory userHandle, string memory uuid, string memory tokenURI) public returns (uint256) {
-        require(!_exists[userHandle], "User handle exists!");
+        require(!_existingUserHandlers[userHandle], "User handle exists!");
 
-        name[userHandle] = uuid;
-        _exists[userHandle] = true;
+        userHandlers[userHandle] = uuid;
+        _existingUserHandlers[userHandle] = true;
         handles.push(userHandle);
         uint256 newTokenId = _tokenIds.current();
         _mint(msg.sender, newTokenId);
@@ -38,7 +38,7 @@ contract WaveUserHandle is ERC721URIStorage {
     }
 
     function getUUIDByUserHandle(string memory userHandle) public view returns (string memory) {
-        return name[userHandle];
+        return userHandlers[userHandle];
     }
 
     function getUserHandleByTokenId(uint256 tokenId) public view returns (string memory) {
