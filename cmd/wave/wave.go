@@ -11,6 +11,7 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/controllers"
 	"github.com/Wave-ETH-Global/wave-node/database"
 	"github.com/Wave-ETH-Global/wave-node/middlewares"
+	"github.com/Wave-ETH-Global/wave-node/redis"
 	"github.com/Wave-ETH-Global/wave-node/repositories"
 	"github.com/Wave-ETH-Global/wave-node/router"
 	"github.com/google/logger"
@@ -37,7 +38,8 @@ func main() {
 			provideRouter,
 			provideLogging,
 			database.ProvideDatabase,
-			middlewares.ProvideRedis,
+			redis.ProvideRedis,
+			middlewares.NewAuthMiddleware,
 		),
 		repositories.FxModule,
 		controllers.FxModule,
@@ -109,9 +111,10 @@ func provideConfig(l *logger.Logger, flags *AppFlags) *config.Config {
 func provideRouter(
 	cfg *config.Config,
 	pc *controllers.ProfileController,
-	ac *controllers.AccountController,
+	ac *controllers.LoginController,
+	am *middlewares.AuthMiddleware,
 ) *echo.Echo {
-	r, err := router.NewRouter(cfg, pc, ac)
+	r, err := router.NewRouter(cfg, pc, ac, am)
 	if err != nil {
 		logger.Fatal(err)
 	}

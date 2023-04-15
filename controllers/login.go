@@ -1,10 +1,13 @@
 package controllers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/logger"
 	"github.com/labstack/echo/v4"
@@ -15,13 +18,13 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/repositories"
 )
 
-type AccountController struct {
-	repo    *repositories.AccountRepo
-	session *middlewares.SessionStore
+type LoginController struct {
+	rc   *redis.Client
+	repo *repositories.ProfileRepository
 }
 
-func NewAccountController(repo *repositories.AccountRepo, session *middlewares.SessionStore) *AccountController {
-	return &AccountController{repo: repo, session: session}
+func NewLoginController(rc *redis.Client) *LoginController {
+	return &LoginController{rc: rc}
 }
 
 type LoginByWalletAddressReq struct {
@@ -31,10 +34,10 @@ type LoginByWalletAddressReq struct {
 }
 
 type LoginByWalletAddressRes struct {
-	WalletAddress string `json:"wallet_address"`
+	Token string `json:"token"`
 }
 
-func (c AccountController) LoginByOrRegisterWalletAddress(
+func (c LoginController) LoginByWallet(
 	ectx echo.Context,
 ) error {
 	req := &LoginByWalletAddressReq{}
@@ -58,17 +61,19 @@ func (c AccountController) LoginByOrRegisterWalletAddress(
 		return errors.WithStack(err)
 	}
 
-	ac := c.repo.GetAccountByAddress(ctx, domain.Address(req.WalletAddress))
+	ac, err := c.repo.GetProfileByAddress(req.WalletAddress)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
 
 	if ac == nil {
-		c.repo.CreateAddress(ctx, walletAddress)
-	}
-	if ac != nil {
-		logger.Infof("found an account. wallet_address:%s", req.WalletAddress)
+		logger.Errorf("account with address %s isn't found", req.WalletAddress)
 	}
 
 	claims := jwt.MapClaims{
 		"address": req.WalletAddress,
+		"uuid":    ac.UUID,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 
@@ -80,10 +85,11 @@ func (c AccountController) LoginByOrRegisterWalletAddress(
 	if err != nil {
 		return err
 	}
-	ectx.Response().Header().Set("authorization", tokenString)
-	c.session.SetWalletAddress(ctx, walletAddress)
+	ectx.Response().Header().Set("Authorization", tokenString)
+	hash := sha256.Sum256([]byte(tokenString))
+	c.rc.Set(ctx, hex.EncodeToString(hash[:]), true, time.Duration(time.Hour*24*7))
 
-	return ectx.JSON(http.StatusOK, &LoginByWalletAddressRes{WalletAddress: req.WalletAddress})
+	return ectx.JSON(http.StatusOK, &LoginByWalletAddressRes{Token: tokenString})
 }
 
 func SignatureSourceMessageFromTemplate(messageTemplate string, nonce string) string {

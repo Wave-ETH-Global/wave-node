@@ -7,6 +7,6 @@ import (
 var FxModule = fx.Module("controllers",
 	fx.Provide(
 		NewProfileController,
-		NewAccountController,
+		NewLoginController,
 	),
 )

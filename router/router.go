@@ -5,13 +5,15 @@ import (
 
 	"github.com/Wave-ETH-Global/wave-node/config"
 	"github.com/Wave-ETH-Global/wave-node/controllers"
+	"github.com/Wave-ETH-Global/wave-node/middlewares"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func NewRouter(cfg *config.Config,
 	pc *controllers.ProfileController,
-	ac *controllers.AccountController,
+	lc *controllers.LoginController,
+	am *middlewares.AuthMiddleware,
 ) (*echo.Echo, error) {
 	router := echo.New()
 	router.HideBanner = true
@@ -27,7 +29,7 @@ func NewRouter(cfg *config.Config,
 		return nil
 	})
 
-	router.POST("/token", ac.LoginByOrRegisterWalletAddress)
+	router.POST("/token", lc.LoginByWallet)
 	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo)
 
 	return router, nil

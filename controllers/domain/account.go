@@ -23,8 +23,6 @@ func NewAccount(userName string, walletAddresses []string) Account {
 func (a *Account) WalletAddresses() []Address { return a.walletAddresses }
 func (a *Account) Name() string               { return a.userName }
 
-type UserName string
-
 type AccountRepository interface {
 	GetAccountByAddress(ctx context.Context, walletAddress Address) (*Account, error)
 }

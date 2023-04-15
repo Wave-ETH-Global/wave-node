@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/google/logger"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -43,13 +44,13 @@ func NewAddress(v string) (Address, error) {
 func (a Address) SigVerify(message string, signature string) error {
 	sig, err := hexutil.Decode(string(signature))
 	if err != nil {
-		log.Error().Msgf("<SigVerify> public key mismatch. address:%s, message:%s, signature:%s", a, message, signature)
+		logger.Errorf("<SigVerify> public key mismatch. address:%s, message:%s, signature:%s", a, message, signature)
 		return errors.WithStack(ErrSigVerifyFailed)
 	}
 
 	pubKey, msgHash, err := a.ecrecover(message, sig)
 	if err != nil {
-		log.Error().Msgf("<SigVerify> invalid signature format. address:%s, message:%s, sig:%+v", a, message, sig)
+		logger.Errorf("<SigVerify> invalid signature format. address:%s, message:%s, sig:%+v", a, message, sig)
 		return errors.WithStack(ErrSigVerifyECRecoverFailed)
 	}
 
@@ -58,23 +59,23 @@ func (a Address) SigVerify(message string, signature string) error {
 
 	pubKeyAddress, err := NewAddress(pubAddress.Hex())
 	if err != nil {
-		log.Error().Msgf("<SigVerify> public key convert to address error!! err:%+v", err)
+		logger.Errorf("<SigVerify> public key convert to address error!! err:%+v", err)
 		return errors.WithStack(ErrSigVerifyFailed)
 	}
 	if !pubKeyAddress.Equal(a) {
-		log.Error().Msgf("<SigVerify> public key mismatch. expected:%s, recovered:%s, message:%s, signature:%s", a, pubKeyAddress, message, signature)
+		logger.Errorf("<SigVerify> public key mismatch. expected:%s, recovered:%s, message:%s, signature:%s", a, pubKeyAddress, message, signature)
 		return errors.WithStack(ErrSigVerifyAddressMismatch)
 	}
 
 	sigWithoutRecoverID, err := a.trimRecoverID(sig)
 	if err != nil {
-		log.Error().Msgf("<SigVerify> trim recover id error. address:%s, len(sig):%d, sig:%+v, err:%+v", pubKeyAddress, len(sig), sig, err)
+		logger.Errorf("<SigVerify> trim recover id error. address:%s, len(sig):%d, sig:%+v, err:%+v", pubKeyAddress, len(sig), sig, err)
 		return errors.WithStack(ErrSigVerifyFailed)
 	}
 	log.Info().Msgf("<SigVerify> to verify... address:%s, sigWithoutRecoverID:%s, len(msgHash):%d, len(sig):%d", pubKeyAddress, sigWithoutRecoverID, len(msgHash), len(sig))
 
 	if !crypto.VerifySignature(crypto.FromECDSAPub(pubKey), msgHash, sig[:len(sig)-1]) {
-		log.Error().Msgf("<SigVerify> can't verify signature with key. address:%s, message:%s, signature:%s", a, message, signature)
+		logger.Errorf("<SigVerify> can't verify signature with key. address:%s, message:%s, signature:%s", a, message, signature)
 		return errors.WithStack(ErrSigVerifyVerificationFailed)
 	}
 
@@ -104,24 +105,24 @@ func (a Address) Has(addresses []Address) bool {
 
 func (a Address) ecrecover(message string, sig []byte) (*ecdsa.PublicKey, []byte, error) {
 	if len(sig) != 65 {
-		log.Error().Msgf("<ecrecover> invalid signature format(length). address:%s, message:%s, sig:%+v", a, message, sig)
+		logger.Errorf("<ecrecover> invalid signature format(length). address:%s, message:%s, sig:%+v", a, message, sig)
 		return nil, nil, errors.WithStack(ErrSigVerifyECRecoverFailed)
 	}
 
 	if sig[64] != 27 && sig[64] != 28 {
-		log.Warn().Msgf("<ecrecover> invalid signature format(last byte). address:%s, message:%s, sig:%+v", a, message, sig)
+		logger.Warningf("<ecrecover> invalid signature format(last byte). address:%s, message:%s, sig:%+v", a, message, sig)
 	}
 
 	// note: personal_sign
 	// https://github.com/ethereum/go-ethereum/blob/master/internal/ethapi/api.go#L545_L559kjklj
 	_, ethSignMessage := accounts.TextAndHash([]byte(message))
 	msgHash := crypto.Keccak256([]byte(ethSignMessage))
-	log.Info().Msgf("<ecrecover> get the public key.... address:%s, message:%s, []byte(signature):%+v", a, message, sig)
+	logger.Infof("<ecrecover> get the public key.... address:%s, message:%s, []byte(signature):%+v", a, message, sig)
 
 	sig[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
 	pubKey, err := crypto.SigToPub(msgHash, sig)
 	if err != nil {
-		log.Error().Msgf("<ecrecover> invalid signature format(public key could not be obtained). message:%s, msgHash:%s, sig:%+v", a, message, sig)
+		logger.Errorf("<ecrecover> invalid signature format(public key could not be obtained). message:%s, msgHash:%s, sig:%+v", a, message, sig)
 		return nil, nil, errors.WithStack(ErrSigVerifyECRecoverFailed)
 	}
 

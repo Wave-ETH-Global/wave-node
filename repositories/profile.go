@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Wave-ETH-Global/wave-node/config"
+	"github.com/Wave-ETH-Global/wave-node/models"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -27,6 +28,7 @@ func NewProfileRepository(db *sqlx.DB, cfg *config.Config) *ProfileRepository {
 	}
 }
 
+// Airstack integration lives here
 func (pr *ProfileRepository) GetOnchainInfo(ethAddress string, cursor string) (map[string]interface{}, error) {
 	client := &http.Client{}
 
@@ -85,4 +87,24 @@ func (pr *ProfileRepository) GetOnchainInfo(ethAddress string, cursor string) (m
 	}
 
 	return data, nil
+}
+
+func (pr *ProfileRepository) GetProfileByAddress(ethAddress string) (*models.Profile, error) {
+	p := models.Profile{}
+	err := pr.db.Select(&p, "select * from profile where eth_address = $1", ethAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
+}
+
+func (pr *ProfileRepository) GetProfileByUUID(uuid string) (*models.Profile, error) {
+	p := models.Profile{}
+	err := pr.db.Select(&p, "select * from profile where uuid = $1", uuid)
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
 }
