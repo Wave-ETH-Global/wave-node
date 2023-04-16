@@ -14,6 +14,7 @@ func NewRouter(cfg *config.Config,
 	pc *controllers.ProfileController,
 	lc *controllers.LoginController,
 	am *middlewares.AuthMiddleware,
+	sc *controllers.SearchController,
 ) (*echo.Echo, error) {
 	router := echo.New()
 	router.HideBanner = true
@@ -33,6 +34,7 @@ func NewRouter(cfg *config.Config,
 	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo)
 	router.POST("/signup", lc.Signup)
 	router.POST("/signup/completed", lc.SignupCompleted)
+	router.POST("/search", sc.Search)
 
 	return router, nil
 }

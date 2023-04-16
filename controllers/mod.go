@@ -8,5 +8,6 @@ var FxModule = fx.Module("controllers",
 	fx.Provide(
 		NewProfileController,
 		NewLoginController,
+		NewSearchController,
 	),
 )

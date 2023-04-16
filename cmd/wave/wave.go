@@ -115,8 +115,9 @@ func provideRouter(
 	pc *controllers.ProfileController,
 	ac *controllers.LoginController,
 	am *middlewares.AuthMiddleware,
+	sc *controllers.SearchController,
 ) *echo.Echo {
-	r, err := router.NewRouter(cfg, pc, ac, am)
+	r, err := router.NewRouter(cfg, pc, ac, am, sc)
 	if err != nil {
 		logger.Fatal(err)
 	}
