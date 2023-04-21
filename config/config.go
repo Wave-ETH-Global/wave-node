@@ -13,6 +13,7 @@ type Config struct {
 	DB            DB
 	Redis         Redis
 	AirStackToken string
+	JWT           JWT
 	Ethereum      EthereumConfig
 }
 
@@ -40,6 +41,10 @@ type Redis struct {
 	Host           string `default:"redis"`
 	Port           uint16 `default:"6379"`
 	TimeoutSeconds uint8  `default:"86400"`
+}
+
+type JWT struct {
+	SigningKey string
 }
 
 func NewConfig(path string) (Config, error) {

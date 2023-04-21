@@ -18,3 +18,7 @@ func SecureRandom(n int) (string, error) {
 	}
 	return string(result), nil
 }
+
+type HTTPError struct {
+	Error string `json:"error"`
+}

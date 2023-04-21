@@ -15,6 +15,7 @@ import (
 	"github.com/Wave-ETH-Global/wave-node/redis"
 	"github.com/Wave-ETH-Global/wave-node/repositories"
 	"github.com/Wave-ETH-Global/wave-node/router"
+	"github.com/Wave-ETH-Global/wave-node/services"
 	"github.com/google/logger"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -45,6 +46,7 @@ func main() {
 		),
 		repositories.FxModule,
 		controllers.FxModule,
+		services.FxModule,
 		fx.Invoke(
 			runRouter,
 		),

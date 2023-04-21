@@ -31,10 +31,11 @@ func NewRouter(cfg *config.Config,
 	})
 
 	router.POST("/token", lc.LoginByWallet)
-	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo)
+	router.GET("/profile/chaininfo/:address", pc.GetProfileChainInfo, am.Middleware)
 	router.POST("/signup", lc.Signup)
 	router.POST("/signup/completed", lc.SignupCompleted)
-	router.POST("/search", sc.Search)
+	router.POST("/search", sc.Search, am.Middleware)
+	router.GET("/profile/connections", pc.GetProfileConnections, am.Middleware)
 
 	return router, nil
 }

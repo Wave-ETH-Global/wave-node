@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -118,4 +119,62 @@ func (pr *ProfileRepository) InsertProfile(p *models.Profile) error {
 		return err
 	}
 	return nil
+}
+
+func (pr *ProfileRepository) GetProfileConnections(uuid string) ([]*models.Connection, error) {
+	var list []*models.Connection
+	err := pr.db.Select(list, "select * from connection where vertex_a = $1", uuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return []*models.Connection{}, nil
+		}
+		return nil, err
+	}
+
+	profileA, err := pr.GetProfileByUUID(uuid)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		v.ProfileA = profileA
+		v.ProfileB, err = pr.GetProfileByUUID(v.VertexB)
+	}
+
+	return list, nil
+}
+
+func (pr *ProfileRepository) SearchProfiles(uuid string, tags []string) ([]*models.Profile, error) {
+	var acquantancies []*models.Profile
+	err := pr.db.Select(&acquantancies, `
+		WITH RECURSIVE traverse(vertex_a, vertex_b, tags, path, depth) AS (
+    		SELECT
+        		vertex_a,
+        		vertex_b,
+        		tags,
+        		ARRAY[ROW(vertex_a, vertex_b)] AS path,
+        		0 as depth
+    		FROM
+        		connection
+    		WHERE
+        		connection.vertex_a = $1
+    		UNION ALL
+    		SELECT connection.vertex_a, connection.vertex_b, connection.tags, path || ROW(connection.vertex_a, connection.vertex_b), traverse.depth+1
+    		FROM traverse
+    		JOIN
+    		connection ON connection.vertex_a = traverse.vertex_b
+    		WHERE ROW(connection.vertex_a, connection.vertex_b) <> ALL(path)
+		)
+
+		SELECT distinct on (vertex_b) profile.* from traverse
+		join profile on uuid = vertex_b WHERE vertex_b <> $1 and traverse.depth < 3 and ($2 <@ traverse.tags or $2 <@ profile.public_tags);
+	`, uuid, pq.Array(tags))
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return []*models.Profile{}, nil
+		}
+		return nil, err
+	}
+
+	return acquantancies, nil
 }

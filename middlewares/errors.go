@@ -10,5 +10,4 @@ var (
 	ErrConflict     = errors.New("conflict")
 
 	// 5xx
-	ErrRepository = errors.New("repository")
 )
